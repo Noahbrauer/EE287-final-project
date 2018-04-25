@@ -20,12 +20,12 @@ int main(){
 
 	SysTick_Init();
 	InitConsole();
-	printString("EE287 Final Project\n");
-	printString("*****************************************************\n");
-	printString("Analog Input: Smoke Detector and Temperature Sensing circuit\n");
+	printString("EE287 Final Project\r\n");
+	printString("*****************************************************\r\n");
+	printString("Analog Input: Smoke Detector and Temperature Sensing circuit\r\n");
 	PortE_Init();
 	PortF_Init();
-	printString("Initialization Complete...\n");
+	printString("Initialization Complete...\r\n");
 
 		
 	while(1){

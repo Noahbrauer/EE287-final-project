@@ -1,5 +1,5 @@
-#ifndef _PortE_h
-#define _PortE_h
+#ifndef _Uart_h
+#define _Uart_h
 
 void InitConsole(void);
 void PrintTemps (uint32_t TempC, uint32_t TempF);
