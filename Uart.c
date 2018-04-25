@@ -49,9 +49,9 @@ unsigned char readChar(void){
 // Wait for buffer to be not full,
 // then output
 void printChar(unsigned char data) {
-	while((UART0_FR_R&0x0020) != 0){		// wait until TXFF is 0
+	while((UART0_FR_R&0x0020) != 0){};		
+	// wait until TXFF is 0
 		UART0_DR_R = data;
-	}
 }
 
 void printString(char* string){

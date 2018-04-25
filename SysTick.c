@@ -9,8 +9,7 @@ void SysTick_Init(void){
 	NVIC_ST_CTRL_R = 0;
 	NVIC_ST_RELOAD_R = 15999;
 	NVIC_ST_CURRENT_R = 0;
-	NVIC_SYS_PRI3_R = (NVIC_SYS_PRI3_R&0x00FFFFFF)|0x40000000;
-	NVIC_ST_CTRL_R = 0x07;
+	NVIC_ST_CTRL_R = 0x05;
 }
 
 void SysTick_Wait(unsigned long period) {

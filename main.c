@@ -20,6 +20,7 @@ int main(){
 
 	SysTick_Init();
 	InitConsole();
+	SysTick_Wait0_1ms(100);
 	printString("EE287 Final Project\r\n");
 	printString("*****************************************************\r\n");
 	printString("Analog Input: Smoke Detector and Temperature Sensing circuit\r\n");
@@ -52,7 +53,7 @@ int main(){
 			PE0 = 0x00;
 		}
 		
-		SysTick_Wait0_1ms(10);
+		SysTick_Wait0_1ms(10000);
 		
 	}
 }
