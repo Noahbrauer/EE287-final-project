@@ -24,7 +24,6 @@ int main(){
 	printString("Analog Input: Smoke Detector and Temperature Sensing circuit\n");
 	PortE_Init();
 	PortF_Init();
-	ADC0_Seq3Init();
 	printString("Initialization Complete...\n");
 
 		
@@ -47,7 +46,7 @@ int main(){
 		}
 		
 		PrintTemps(Ctemp, Ftemp);
-		SysTick_Wait100ms(10);
+		SysTick_Wait0_1ms(10);
 		
 	}
 }
