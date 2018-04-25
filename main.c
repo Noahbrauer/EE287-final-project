@@ -3,6 +3,7 @@
 #include "ADC0.h"
 #include "stdint.h"
 #include "tm4c123gh6pm.h"
+#include "Uart.h"
 
 #define PE0 (*((volatile unsigned long*) 0x40024004))
 #define PF4 (*((volatile unsigned long*) 0x40025040))
