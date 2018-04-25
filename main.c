@@ -1,100 +1,111 @@
 #include "PortE.h"
 #include "SysTick.h"
+#include "ADC0.h"
 #include "stdint.h"
-#include "stdbool.h"
 #include "tm4c123gh6pm.h"
-#include "inc/hw_memmap.h"
-#include "driverlib/gpio.h"
-#include "driverlib/pin_map.h"
-#include "driverlib/sysctl.h"
-#include "driverlib/uart.h"
-#include "utils/uartstdio.h"
-#include "inc/tm4c123gh6pm.h"
 
+#define PE0 (*((volatile unsigned long*) 0x40024004))
+#define PF4 (*((volatile unsigned long*) 0x40025040))
+	
 void PrintTemps (uint32_t TempC, uint32_t TempF);
-uint32_t clkscalevalue = 6;
+unsigned char readChar (void);
+void printChar (unsigned char c);
+void printString (char* string);
+const int STRING_SIZE = 100;
+const int BUFFER_SIZE = 50;
 void InitConsole(void);
 
 int main(){
-	volatile double ADCvalue;
+	volatile double TempValue;
+	volatile double IRvalue;
 	volatile double CelsiusTemperature;
 	volatile double FahrenheitTemperature;
-	volatile double Vout;
+	volatile double TempVout;
+	volatile double IRvout;
 	uint32_t Ctemp, Ftemp;
-	unsigned int delay;
-	SysCtlClockSet(SYSCTL_SYSDIV_5 | SYSCTL_USE_PLL | SYSCTL_OSC_MAIN |
-                   SYSCTL_XTAL_16MHZ);
+	SysTick_Init();
 	InitConsole();
-	UARTprintf("EE287 Final Project\n");
-	UARTprintf("*****************************************************\n");
-	UARTprintf("Analog Input: Temperature Sensor Circuit\n");
+	printString("EE287 Final Project\n");
+	printString("*****************************************************\n");
+	printString("Analog Input: Smoke Detector and Temperature Sensing circuit\n");
 	PortE_Init();
-	UARTprintf("Initialization Complete...\n");
-	SYSCTL_RCGC2_R |= SYSCTL_RCGC2_GPIOF;
-	delay = SYSCTL_RCGC2_R;
-	GPIO_PORTF_DIR_R |= 0x04;
-	GPIO_PORTF_AFSEL_R &= ~0x04;
-	GPIO_PORTF_DEN_R |= 0x04;
-	GPIO_PORTF_PCTL_R = (GPIO_PORTF_PCTL_R & 0xFFFFF0FF) + 0x00000000;
-	GPIO_PORTF_AMSEL_R = 0;
+	PortF_Init();
+	ADC0_Seq3Init();
+	printString("Initialization Complete...\n");
+
+		
 	while(1){
-		ADCvalue = ADC0_InSeq3();
-		Vout = ((ADCvalue)/4095)*3.3;
-		CelsiusTemperature = (Vout/0.0225)-61.1111;
-		FahrenheitTemperature = CelsiusTemperature*1.8 + 32;
+		TempValue = ADC0_InSeq3_Temp();
+		TempVout = ((TempValue)/4095)*3.3;
+		CelsiusTemperature = ((1.5151*TempVout)/0.0225)-61.1111;
+		FahrenheitTemperature = CelsiusTemperature *9/5 +32;
 		Ctemp = (uint32_t) CelsiusTemperature;
 		Ftemp = (uint32_t) FahrenheitTemperature;
-		PrintTemps(Ctemp, Ftemp);
-		SysCtlDelay(SysCtlClockGet() / clkscalevalue);
-	}
-}
 
-void PrintTemps (uint32_t TempC, uint32_t TempF)
-{
-	UARTprintf("Temperature = %3d*C\n", TempC);	
-	UARTprintf("Temperature = %3d*F\n", TempF);	
-	UARTprintf("---------------------\n");
+		IRvalue = ADC0_InSeq3_IR();
+		IRvout = ((IRvalue)/4095)*3.3;
+
+		if (IRvout < 2.6 || FahrenheitTemperature > 90){
+			PE0 = 0x01;
+			while (PF4 == 0x10) {
+			}
+			PE0 = 0x00;
+		}
+		
+		PrintTemps(Ctemp, Ftemp);
+		SysTick_Wait100ms(10);
+		
+	}
 }
 
 void InitConsole(void)
 {
-    // Enable GPIO port A which is used for UART0 pins.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_GPIOA);
-
-    // Configure the pin muxing for UART0 functions on port A0 and A1.
-    GPIOPinConfigure(GPIO_PA0_U0RX);
-    GPIOPinConfigure(GPIO_PA1_U0TX);
-
-    // Enable UART0 so that we can configure the clock.
-    SysCtlPeripheralEnable(SYSCTL_PERIPH_UART0);
-
-    // Use the internal 16MHz oscillator as the UART clock source.
-    UARTClockSourceSet(UART0_BASE, UART_CLOCK_PIOSC);
-   
-
-		// Select the alternate (UART) function for these pins.   
-    GPIOPinTypeUART(GPIO_PORTA_BASE, GPIO_PIN_0 | GPIO_PIN_1);
-
-    // Initialize the UART for console I/O. 9600 BAUD
-    UARTStdioConfig(0, 9600, 16000000);
-		
-		 SYSCTL_RCGC1_R |= 0x00000002;
-		
+    SYSCTL_RCGC1_R |= 0x0001; 	// activate UART0
+	SYSCTL_RCGC2_R |= 0x0001; 	// activate port A
+	UART0_CTL_R &= ~0x0001;		// disable UART
+	UART0_IBRD_R = 104;			// IBRD=int(16000000/(16*9600)) = int(104.166)
+	UART0_FBRD_R = 11;			// FBRD=int(0.166*64+0.5) = 11
+	UART0_LCRH_R = 0x0070;		// 8-bit length, enable FIFO
+	UART0_CTL_R = 0x301			// Enable RXE, TXE and UART
+	GPIO_PORTA_PCTL_R=(GPIO_PORTA_PCTL_R&0xFFFFFF00)+0x00000011;
+	GPIO_PORTA_AMSEL_R &= ~0x30; // disable analog on PA1-0
+	GPIO_PORTA_AFSEL_R |= 0x03; // alt funct on PA1-0
+	GPIO_PORTA_DEN_R |= 0x03; // digital I/O on PA1-0	
 }
 
-void UARTprintf(const char *pcString, ...)
+void PrintTemps(uint32_t TempC, uint32_t TempF)
 {
-    va_list vaArgP;
+	char TempCstr[STRING_SIZE] = "Temperature = ";
+	char buffer[BUFFER_SIZE];
+	sprintf(buffer, "%3d*C\n", TempC)
+	strcat(TempCstr, buffer);
 
-    //
-    // Start the varargs processing.
-    //
-    va_start(vaArgP, pcString);
+	char TempFstr[STRING_SIZE] = "Temperature = ";
+	char buffer[BUFFER_SIZE];
+	sprintf(buffer, "%3d*C\n", TempF)
+	strcat(TempFstr, buffer);
 
-    UARTvprintf(pcString, vaArgP);
+	printString(TempCstr);	
+	printString(TempFstr);	
+	printString("---------------------\n");
+}
 
-    //
-    // We're finished with the varargs now.
-    //
-    va_end(vaArgP);
+//Wait for new input
+//Return ASCII code
+unsigned char readChar(void){
+	while((UART0_FR_R & 0x0010) != 0);	// wait until RXFE is 0
+	return ((unsigned char)(UART0_DR_R&0xFF));
+}
+
+// Wait for buffer to be not full,
+// then output
+void printChar(unsigned char data) {
+	while((UART0_FR_R&0x0020) != 0);		// wait until TXFF is 0
+	UART0_DR_R = data;
+}
+
+void printString(char* string){
+	while(*string){
+		printChar(*(string++));
+	}
 }
