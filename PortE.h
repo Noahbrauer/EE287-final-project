@@ -4,5 +4,6 @@
 #include "stdint.h"
 
 void PortE_Init(void);
+void PortF_Init(void);
 
 #endif
