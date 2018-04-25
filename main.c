@@ -6,6 +6,7 @@
 #include "Uart.h"
 
 #define PE0 (*((volatile unsigned long*) 0x40024004))
+#define PF0 (*((volatile unsigned long*) 0x40025004))
 #define PF4 (*((volatile unsigned long*) 0x40025040))
 
 int main(){
@@ -37,15 +38,20 @@ int main(){
 
 		IRvalue = ADC0_InSeq3_IR();
 		IRvout = ((IRvalue)/4095)*3.3;
+		
+		PrintTemps(Ctemp, Ftemp);
 
 		if (IRvout < 2.6 || FahrenheitTemperature > 90){
 			PE0 = 0x01;
 			while (PF4 == 0x10) {
+				PF0 = 0x10;
+				SysTick_Wait0_1ms(2);
+				PF0 = 0x00;
+				SysTick_Wait0_1ms(2);
 			}
 			PE0 = 0x00;
 		}
 		
-		PrintTemps(Ctemp, Ftemp);
 		SysTick_Wait0_1ms(10);
 		
 	}
