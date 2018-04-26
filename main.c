@@ -44,7 +44,7 @@ int main(){
 		
 		PrintTemps(Ctemp, Ftemp);
 
-		if (IRvout < 2.6 || FahrenheitTemperature > 90){
+		if (IRvout < 2.9 || FahrenheitTemperature > 90){
 			printString(smokeStatus);
 			PE0 = 0x01;
 			while (PF4 == 0x10) {
